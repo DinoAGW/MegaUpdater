@@ -1,9 +1,9 @@
 package de.zbmed.utilities;
 
-public class UserDefined {
+public class Custom {
 	static final String fs = System.getProperty("file.separator");
 
-	public static String defaultRosettaURL(String rosettaInstance) throws Exception {
+	public static String getRosettaURL(String rosettaInstance) throws Exception {
 		if (rosettaInstance.equals("dev")) {
 			return "https://rosetta.develop.lza.tib.eu";
 		} else if (rosettaInstance.equals("test")) {
@@ -16,7 +16,7 @@ public class UserDefined {
 		}
 	}
 
-	public static String defaultInstitution(String rosettaInstance) throws Exception {
+	public static String getInstitution(String rosettaInstance) throws Exception {
 		if (rosettaInstance.equals("dev")) {
 			return "ZBM";
 		} else if (rosettaInstance.equals("test")) {
@@ -29,7 +29,7 @@ public class UserDefined {
 		}
 	}
 
-	public static String defaultUserName(String rosettaInstance) throws Exception {
+	public static String getUsername(String rosettaInstance) throws Exception {
 		if (rosettaInstance.equals("dev")) {
 			return "SubApp ZB MED";
 		} else if (rosettaInstance.equals("test")) {
@@ -42,7 +42,7 @@ public class UserDefined {
 		}
 	}
 
-	public static String defaultPassword(String rosettaInstance) throws Exception {
+	public static String getPassword(String rosettaInstance) throws Exception {
 		if (rosettaInstance.equals("dev")) {
 			String propertyDateiPfad = System.getProperty("user.home").concat(fs).concat("Rosetta_Properties.txt");
 			PropertiesManager prop = new PropertiesManager(propertyDateiPfad);
@@ -61,13 +61,15 @@ public class UserDefined {
 		}
 	}
 
-	public static String defaultIE_WSDL_URL(String rosettaURL) {
+	public static String getIE_WSDL_URL(String rosettaURL) {
 		return rosettaURL.concat("/dpsws/repository/IEWebServices?wsdl");
 	}
 
-	public static void main(String[] args) {
-		// TODO Auto-generated method stub
-
+	public static String getSRU_URL(String rosettaInstance) throws Exception {
+		return getRosettaURL(rosettaInstance).concat("/search/permanent/ie/sru");
 	}
 
+	public static void main(String[] args) throws Exception {
+
+	}
 }

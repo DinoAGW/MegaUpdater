@@ -35,10 +35,10 @@ public class XmlHelper {
 //		transformer.setOutputProperty(OutputKeys.INDENT, "yes");//dafür müssten die ganzen eingelesenen Einrückungen raus
 		transformer.transform(domSource, result);
 		String ret = writer.toString();
-		int stelle = ret.indexOf(">") + 1;
-		ret = ret.substring(0, stelle) + "\n  " + ret.substring(stelle);
+//		int stelle = ret.indexOf(">") + 1;
+//		ret = ret.substring(0, stelle) + "\n  " + ret.substring(stelle);
 		//Nötig aufgrund eines Bugs in Rosetta
-		ret = ret.replaceAll("<dnx xmlns=\"http://www.exlibrisgroup.com/dps/dnx\" version=\"5.0\">", "<dnx version=\"5.0\" xmlns=\"http://www.exlibrisgroup.com/dps/dnx\">");
+		//ret = ret.replaceAll("<dnx xmlns=\"http://www.exlibrisgroup.com/dps/dnx\" version=\"5.0\">", "<dnx version=\"5.0\" xmlns=\"http://www.exlibrisgroup.com/dps/dnx\">");
 		return ret;
 	}
 
@@ -85,6 +85,18 @@ public class XmlHelper {
 				if (item.getNodeValue() != null && item.getNodeValue().startsWith(value)) {
 					return node;
 				}
+			}
+			node = node.getNextSibling();
+		}
+		return null;
+	}
+	
+	public static Node getFirstChildByNameWithTextContains(Node parent, String name, String contains) {
+		Node node = parent.getFirstChild();
+		while (node != null) {
+			if (node.getNodeName() != null && node.getNodeName().contentEquals(name)) {
+				String text = node.getTextContent();
+				if (text.contains(contains)) return node;
 			}
 			node = node.getNextSibling();
 		}
