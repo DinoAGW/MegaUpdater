@@ -69,6 +69,28 @@ public class Custom {
 		return getRosettaURL(rosettaInstance).concat("/search/permanent/ie/sru");
 	}
 
+	public static String updateSipMainFolder() {
+		return System.getProperty("user.home").concat(fs).concat("MegaUpdater").concat(fs);
+	}
+
+	public static String updateSipFolder(String workflow) throws Exception {
+		switch (workflow) {
+		case "Test":
+			return updateSipMainFolder().concat(workflow).concat(fs);
+		default:
+			throw new Exception("Workflow " + workflow + " nicht erkannt");
+		}
+	}
+
+	public static String rosettaInstance(String workflow) throws Exception {
+		switch (workflow) {
+		case "Test":
+			return "test";
+		default:
+			throw new Exception("Workflow " + workflow + " nicht erkannt");
+		}
+	}
+
 	public static void main(String[] args) throws Exception {
 
 	}
