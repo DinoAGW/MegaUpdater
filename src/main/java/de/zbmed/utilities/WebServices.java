@@ -1,11 +1,18 @@
 package de.zbmed.utilities;
 
 import java.net.URL;
+import java.util.List;
+import java.util.Stack;
 
 import javax.xml.namespace.QName;
 
+import org.w3c.dom.Document;
+
+import com.exlibris.dps.Action;
 import com.exlibris.dps.IEWebServices;
 import com.exlibris.dps.IEWebServices_Service;
+import com.exlibris.dps.IeStatusInfo;
+import com.exlibris.dps.MetaData;
 import com.exlibris.dps.sdk.pds.HeaderHandlerResolver;
 
 public class WebServices {
@@ -61,6 +68,74 @@ public class WebServices {
 			}
 		}
 		return retval;
+	}
+
+	public static String lockIE(String iePid, String rosettaInstance) throws Exception {
+		final String rosettaURL = Custom.getRosettaURL(rosettaInstance);
+		final String institution = Custom.getInstitution(rosettaInstance);
+		final String userName = Custom.getUsername(rosettaInstance);
+		final String password = Custom.getPassword(rosettaInstance);
+		final String IE_WSDL_URL = Custom.getIE_WSDL_URL(rosettaURL);
+
+		IEWebServices_Service ieWS = new IEWebServices_Service(new URL(IE_WSDL_URL),
+				new QName("http://dps.exlibris.com/", "IEWebServices"));
+		ieWS.setHandlerResolver(new HeaderHandlerResolver(userName, password, institution));
+
+		Action action = Action.valueOf("LOCK");
+		IeStatusInfo iesi = ieWS.getIEWebServicesPort().manageIE(action, iePid, null);
+		return iesi.getLockedBy();
+	}
+
+	public static String rollbackIE(String iePid, String rosettaInstance) throws Exception {
+		final String rosettaURL = Custom.getRosettaURL(rosettaInstance);
+		final String institution = Custom.getInstitution(rosettaInstance);
+		final String userName = Custom.getUsername(rosettaInstance);
+		final String password = Custom.getPassword(rosettaInstance);
+		final String IE_WSDL_URL = Custom.getIE_WSDL_URL(rosettaURL);
+
+		IEWebServices_Service ieWS = new IEWebServices_Service(new URL(IE_WSDL_URL),
+				new QName("http://dps.exlibris.com/", "IEWebServices"));
+		ieWS.setHandlerResolver(new HeaderHandlerResolver(userName, password, institution));
+
+		Action action = Action.valueOf("ROLLBACK");
+		IeStatusInfo iesi = ieWS.getIEWebServicesPort().manageIE(action, iePid, null);
+		return iesi.getLockedBy();
+	}
+
+	public static String commitIE(String iePid, String rosettaInstance) throws Exception {
+		final String rosettaURL = Custom.getRosettaURL(rosettaInstance);
+		final String institution = Custom.getInstitution(rosettaInstance);
+		final String userName = Custom.getUsername(rosettaInstance);
+		final String password = Custom.getPassword(rosettaInstance);
+		final String IE_WSDL_URL = Custom.getIE_WSDL_URL(rosettaURL);
+
+		IEWebServices_Service ieWS = new IEWebServices_Service(new URL(IE_WSDL_URL),
+				new QName("http://dps.exlibris.com/", "IEWebServices"));
+		ieWS.setHandlerResolver(new HeaderHandlerResolver(userName, password, institution));
+
+		Action action = Action.valueOf("COMMIT");
+		IeStatusInfo iesi = ieWS.getIEWebServicesPort().manageIE(action, iePid, null);
+		return iesi.getLockedBy();
+	}
+
+	public static void updateMD(String iePid, String rosettaInstance, Document doc, Boolean commit) throws Exception {
+		final String rosettaURL = Custom.getRosettaURL(rosettaInstance);
+		final String institution = Custom.getInstitution(rosettaInstance);
+		final String userName = Custom.getUsername(rosettaInstance);
+		final String password = Custom.getPassword(rosettaInstance);
+		final String IE_WSDL_URL = Custom.getIE_WSDL_URL(rosettaURL);
+
+		IEWebServices_Service ieWS = new IEWebServices_Service(new URL(IE_WSDL_URL),
+				new QName("http://dps.exlibris.com/", "IEWebServices"));
+		ieWS.setHandlerResolver(new HeaderHandlerResolver(userName, password, institution));
+		
+		List<MetaData> metadata = new Stack<>();
+		MetaData metadatum = new MetaData();
+		metadatum.setType("descriptive");
+		metadatum.setSubType("dc");
+		metadatum.setContent(XmlHelper.getStringFromDocumentWithIndention(doc));
+		metadata.add(metadatum);
+		ieWS.getIEWebServicesPort().updateMD(commit, metadata, iePid, null);
 	}
 
 	public static void main(String[] args) throws Exception {
