@@ -42,6 +42,28 @@ public class Custom {
 		}
 	}
 
+	public static String getSftpUsername() throws Exception {
+		String propertyDateiPfad = System.getProperty("user.home").concat(fs).concat("Rosetta_Properties.txt");
+		PropertiesManager prop = new PropertiesManager(propertyDateiPfad);
+		return prop.readStringFromProperty("sftpUsername");
+	}
+
+	public static String getSftpKeyFile() throws Exception {
+		String propertyDateiPfad = System.getProperty("user.home").concat(fs).concat("Rosetta_Properties.txt");
+		PropertiesManager prop = new PropertiesManager(propertyDateiPfad);
+		return prop.readStringFromProperty("sftpKeyFile");
+	}
+
+	public static String getSftpKeyPwd() throws Exception {
+		String propertyDateiPfad = System.getProperty("user.home").concat(fs).concat("Rosetta_Properties.txt");
+		PropertiesManager prop = new PropertiesManager(propertyDateiPfad);
+		return prop.readStringFromProperty("sftpKeyPwd");
+	}
+
+	public static String getSftpAdresse() throws Exception {
+		return "transfer.lza.tib.eu";
+	}
+
 	public static String getPassword(String rosettaInstance) throws Exception {
 		if (rosettaInstance.equals("dev")) {
 			String propertyDateiPfad = System.getProperty("user.home").concat(fs).concat("Rosetta_Properties.txt");

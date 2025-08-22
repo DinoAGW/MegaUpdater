@@ -168,4 +168,19 @@ public class XmlHelper {
 		udn.setAttribute(attr, value);
 		return udn;
 	}
+	
+	public static void printChildren(Node node) {
+		NodeList nl = node.getChildNodes();
+		for (int index = 0; index < nl.getLength(); ++index) {
+			Node child = nl.item(index);
+			StringBuilder sb = new StringBuilder("<" + child.getNodeName());
+			NamedNodeMap nnm = child.getAttributes();
+			for (int index2 = 0; index2 < nnm.getLength(); ++index2) {
+				Node attr = nnm.item(index2);
+				sb.append(" " + attr.getNodeName() + "=\"" + attr.getTextContent() + "\"");
+			}
+			sb.append(">");
+			System.out.println(sb);
+		}
+	}
 }
