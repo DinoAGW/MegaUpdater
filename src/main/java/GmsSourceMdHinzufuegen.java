@@ -1,9 +1,20 @@
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Stack;
 
+import org.apache.commons.codec.digest.DigestUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import com.exlibris.dps.Fixity;
+import com.exlibris.dps.MetaData;
+import com.exlibris.dps.Operation;
+import com.exlibris.dps.RepresentationContent;
+
+import de.zbmed.rosetta.Transferserver;
 import de.zbmed.utilities.Drive;
 import de.zbmed.utilities.Url;
 import de.zbmed.utilities.WebServices;
@@ -13,116 +24,189 @@ public class GmsSourceMdHinzufuegen {
 	private static final String fs = Drive.fs;
 	private static final String home = System.getProperty("user.home");
 	private static final String workspace = home.concat(fs).concat("workspace").concat(fs);
+	private static Transferserver ts = null;
 
 	public static void main(String[] args) throws Exception {
+		ts = new Transferserver();
 //		verarbeiteCsv();
 		verarbeiteEins("IE1493172", "GMSKON_03dgpp001", "dev");
+		ts.diconnect();
 		System.out.println("GmsSourceMdHinzufuegen Ende");
 	}
 
 	private static void verarbeiteCsv() throws Exception {
-			File csvFile = new File(workspace.concat("kurratc Kongresse Before 2020.csv"));
-			final String rosettaInstance = "prod";
-			if (!csvFile.exists()) {
-				throw new Exception("CSV Datei nicht gefunden");
-			}
-			String[][] IEListe = Drive.readCsvFileMehrspaltig(csvFile);
-	//		System.out.println(IEListe.length + " x " + IEListe[0].length);
-	//		Drive.printZeile(IEListe[0]);
-			String startWith = null;
-	//		startWith = "IE2714187";
-			for (int i = 1; i < IEListe.length; ++i) {
-				String iePid = IEListe[i][0];
-				String uda = IEListe[i][4];
-				if (startWith == null || startWith.contentEquals(iePid)) {
-					if (startWith != null) {
-						startWith = null;
-						continue;// optional
-					}
-				} else {
-					continue;
-				}
-				verarbeiteEins(iePid, uda, rosettaInstance);
-				throw new Exception("Abbruch");
-			}
+		File csvFile = new File(workspace.concat("kurratc Kongresse Before 2020.csv"));
+		final String rosettaInstance = "prod";
+		if (!csvFile.exists()) {
+			throw new Exception("CSV Datei nicht gefunden");
 		}
+		String[][] IEListe = Drive.readCsvFileMehrspaltig(csvFile);
+		// System.out.println(IEListe.length + " x " + IEListe[0].length);
+		// Drive.printZeile(IEListe[0]);
+		String startWith = null;
+		// startWith = "IE2714187";
+		for (int i = 1; i < IEListe.length; ++i) {
+			String iePid = IEListe[i][0];
+			String uda = IEListe[i][4];
+			if (startWith == null || startWith.contentEquals(iePid)) {
+				if (startWith != null) {
+					startWith = null;
+					continue;// optional
+				}
+			} else {
+				continue;
+			}
+			verarbeiteEins(iePid, uda, rosettaInstance);
+			throw new Exception("Abbruch");
+		}
+	}
 
 	private static void verarbeiteEins(String iePid, String uda, String rosettaInstance) throws Exception {
-			System.out.println(iePid + " -> " + uda);
-			boolean istUeberordnung = !Character.isDigit(uda.charAt(7));
-	//		if (istUeberordnung) System.out.println("Ist Überordnung");
-			String metsString = WebServices.getIE(rosettaInstance, iePid);
-			Document doc = XmlHelper.parse(metsString);
-			XmlHelper.removeEmptyNodes(doc);
-			Node node = doc;
-			String sourceMdDateiname = istUeberordnung ? "SRU.xml" : "OAI.xml";
-			if (hatDateiEndetMit(node, sourceMdDateiname))
-				return;
-			Document md = istUeberordnung ? getSRU(node) : getOAI(uda);
-			System.out.println(XmlHelper.getStringFromDocumentWithIndention(md));
+		System.out.println(iePid + " -> " + uda);
+		boolean istUeberordnung = !Character.isDigit(uda.charAt(7));
+		// if (istUeberordnung) System.out.println("Ist Überordnung");
+		String metsString = WebServices.getIE(rosettaInstance, iePid);
+		Document doc = XmlHelper.parse(metsString);
+		XmlHelper.removeEmptyNodes(doc);
+		Node node = doc;
+		String sourceMdDateiname = istUeberordnung ? "SRU.xml" : "OAI.xml";
+		if (hatDateiEndetMit(doc, sourceMdDateiname))
+			return;
+		node = XmlHelper.getFirstChildByName(node, "mets:mets");
+		node = XmlHelper.getFirstChildByName(node, "mets:fileSec");
+		NodeList children = node.getChildNodes();
+		if (children.getLength() != 1) {
+			throw new Exception("Es sollte nur eine Repräsentation geben, bei " + iePid);
 		}
+		String repPid = children.item(0).getAttributes().getNamedItem("ID").getNodeValue();
+		Document md = istUeberordnung ? getSRU(doc) : getOAI(uda);
+		String mdString = XmlHelper.getStringFromDocumentWithIndention(md);
+//		addSourceMD(iePid, repPid, mdString, sourceMdDateiname, rosettaInstance);
+		updateMD(iePid, mdString, doc, istUeberordnung, rosettaInstance);
+	}
+
+	private static void updateMD(String iePid, String mdString, Document doc, boolean istUeberordnung,
+			String rosettaInstance) throws Exception {
+		Node node = doc;
+		node = XmlHelper.getFirstChildByName(node, "mets:mets");
+		node = XmlHelper.getFirstChildByNameWithAttrValue(node, "mets:dmdSec", "ID", "ie-dmd");
+		node = XmlHelper.getFirstChildByName(node, "mets:mdWrap");
+		node = XmlHelper.getFirstChildByName(node, "mets:xmlData");
+		Node metsNode = XmlHelper.getFirstChildByName(node, "dc:record");
+		NodeList nl = metsNode.getChildNodes();
+		for (int i1 = nl.getLength() - 1; i1 >= 0; --i1) {
+			metsNode.removeChild(nl.item(i1));
+		}
+		Document doc2 = XmlHelper.parse(mdString);
+		XmlHelper.removeEmptyNodes(doc2);
+		node = doc2;
+		node = XmlHelper.getFirstChildByName(node, "OAI-PMH");
+		node = XmlHelper.getFirstChildByName(node, "GetRecord");
+		node = XmlHelper.getFirstChildByName(node, "record");
+		node = XmlHelper.getFirstChildByName(node, "metadata");
+		node = XmlHelper.getFirstChildByName(node, "oai_dc:dc");
+		XmlHelper.printChildren(node);
+		throw new Exception("reicht erstmal");
+	}
+
+	private static void addSourceMD(String iePid, String repPid, String mdString, String sourceMdDateiname,
+			String rosettaInstance) throws Exception {
+		Path tempFile = Files.createTempFile("SourceMD", ".xml");
+		Files.writeString(tempFile, mdString);
+		String md5Hash = DigestUtils.md5Hex(mdString);
+		String remotePath = "/exchange/lza/lza-zbmed/" + rosettaInstance + "/gms/";
+		String remoteFilePath = remotePath + sourceMdDateiname;
+		ts.uploadFile(tempFile.toAbsolutePath().toString(), remoteFilePath);
+		List<RepresentationContent> representationContent = new Stack<>();
+		RepresentationContent rc = new RepresentationContent();
+		rc.setOperation(Operation.ADD);
+		rc.setNewFile(remoteFilePath);
+		rc.setFileOriginalPath("SourceMD/" + sourceMdDateiname);
+		rc.setLabel("SourceMD/" + sourceMdDateiname);
+		Fixity fix = new Fixity();
+		fix.setAlgorithmType("MD5");
+		fix.setValue(md5Hash);
+		rc.setFixity(fix);
+		representationContent.add(rc);
+		List<MetaData> metadata = null;
+		String submissionReason = "2025-08-22. dLZA. Automatisches Update durch MegaUpdater. Hinzufügen der SourceMD-Datei "
+				+ sourceMdDateiname + " bei IEs mit creation date vor 2018.";
+		long ripID = WebServices.updateRepresentation(representationContent, metadata, repPid, iePid, rosettaInstance,
+				true, submissionReason);
+		while (true) {
+			Thread.sleep(1000);
+			String ripStatus = WebServices.getRipStatus(ripID, rosettaInstance);
+			if (ripStatus.contentEquals("Finished")) {
+				break;
+			} else {
+//				System.out.println(ripStatus);
+			}
+		}
+		ts.removeFile(remoteFilePath);
+	}
 
 	private static boolean hatDateiEndetMit(Object o, String dateiname) throws Exception {
-			boolean ret = false;
-			Node node;
-			if (o instanceof String) {
-				Document doc = XmlHelper.parse((String) o);
-				XmlHelper.removeEmptyNodes(doc);
-				node = doc;
-			} else if (o instanceof Node) {
-				node = (Node) o;
-			} else {
-				throw new Exception("Object sollte String oder Node sein");
-			}
-			node = XmlHelper.getFirstChildByName(node, "mets:mets");
-			node = XmlHelper.getFirstChildByName(node, "mets:fileSec");
-			node = XmlHelper.getFirstChildByName(node, "mets:fileGrp");
-	//		XmlHelper.printChildren(node);
-			NodeList nl = node.getChildNodes();
-			for (int i1 = 0; i1 < nl.getLength(); ++i1) {
-				Node child = nl.item(i1);
-				child = XmlHelper.getFirstChildByName(child, "mets:FLocat");
-	//			XmlHelper.printChildren(child);
-				String href = child.getAttributes().getNamedItem("xlin:href").getTextContent();
-	//			System.out.println(href);
-				if(href.endsWith(dateiname)) {
-					ret = true;
-				}
-			}
-	//		XmlHelper.printChildren(node);
-			return ret;
+		boolean ret = false;
+		Node node;
+		if (o instanceof String) {
+			Document doc = XmlHelper.parse((String) o);
+			XmlHelper.removeEmptyNodes(doc);
+			node = doc;
+		} else if (o instanceof Node) {
+			node = (Node) o;
+		} else {
+			throw new Exception("Object sollte String oder Node sein");
 		}
+		node = XmlHelper.getFirstChildByName(node, "mets:mets");
+		node = XmlHelper.getFirstChildByName(node, "mets:fileSec");
+		node = XmlHelper.getFirstChildByName(node, "mets:fileGrp");
+		// XmlHelper.printChildren(node);
+		NodeList nl = node.getChildNodes();
+		for (int i1 = 0; i1 < nl.getLength(); ++i1) {
+			Node child = nl.item(i1);
+			child = XmlHelper.getFirstChildByName(child, "mets:FLocat");
+			// XmlHelper.printChildren(child);
+			String href = child.getAttributes().getNamedItem("xlin:href").getTextContent();
+			// System.out.println(href);
+			if (href.endsWith(dateiname)) {
+				ret = true;
+			}
+		}
+		// XmlHelper.printChildren(node);
+		return ret;
+	}
 
 	private static Document getSRU(Node node) throws Exception {
-			node = XmlHelper.getFirstChildByName(node, "mets:mets");
-			node = XmlHelper.getFirstChildByNameWithAttrValue(node, "mets:dmdSec", "ID", "ie-dmd");
-			node = XmlHelper.getFirstChildByName(node, "mets:mdWrap");
-			node = XmlHelper.getFirstChildByName(node, "mets:xmlData");
-			node = XmlHelper.getFirstChildByName(node, "dc:record");
-			NodeList nl = node.getChildNodes();
-			String HT = null;
-			for (int i1 = 0; i1 < nl.getLength(); ++i1) {
-				Node child = nl.item(i1);
-				if (child.getNodeName().contentEquals("dc:identifier") && child.getTextContent().startsWith("HT0")) {
-					if (HT == null) {
-						HT = child.getTextContent();
-					} else {
-						throw new Exception("Zwei HT-Nummern gefunden");
-					}
+		node = XmlHelper.getFirstChildByName(node, "mets:mets");
+		node = XmlHelper.getFirstChildByNameWithAttrValue(node, "mets:dmdSec", "ID", "ie-dmd");
+		node = XmlHelper.getFirstChildByName(node, "mets:mdWrap");
+		node = XmlHelper.getFirstChildByName(node, "mets:xmlData");
+		node = XmlHelper.getFirstChildByName(node, "dc:record");
+		NodeList nl = node.getChildNodes();
+		String HT = null;
+		for (int i1 = 0; i1 < nl.getLength(); ++i1) {
+			Node child = nl.item(i1);
+			if (child.getNodeName().contentEquals("dc:identifier") && child.getTextContent().startsWith("HT0")) {
+				if (HT == null) {
+					HT = child.getTextContent();
+				} else {
+					throw new Exception("Zwei HT-Nummern gefunden");
 				}
 			}
-			if (HT == null) {
-				throw new Exception("Keine HT-Nummer gefunden");
-			}
-	//		System.out.println(HT);
-			String alma = ht2alma(HT);
-			Document doc = XmlHelper.parse(Url.getWebsite(alma));
-			XmlHelper.removeEmptyNodes(doc);
-			return doc;
 		}
+		if (HT == null) {
+			throw new Exception("Keine HT-Nummer gefunden");
+		}
+		// System.out.println(HT);
+		String alma = ht2alma(HT);
+		Document doc = XmlHelper.parse(Url.getWebsite(alma));
+		XmlHelper.removeEmptyNodes(doc);
+		return doc;
+	}
 
 	public static String ht2alma(String HT) {
-		return "https://eu04.alma.exlibrisgroup.com/view/sru/49HBZ_ZBM?version=1.2&operation=searchRetrieve&recordSchema=dc&query=alma.other_system_number_035_a_exact=(DE-605)".concat(HT);
+		return "https://eu04.alma.exlibrisgroup.com/view/sru/49HBZ_ZBM?version=1.2&operation=searchRetrieve&recordSchema=dc&query=alma.other_system_number_035_a_exact=(DE-605)"
+				.concat(HT);
 	}
 
 	private static Document getOAI(String uda) throws Exception {

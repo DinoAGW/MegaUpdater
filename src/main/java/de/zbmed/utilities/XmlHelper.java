@@ -15,7 +15,11 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
-import org.w3c.dom.*;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 public class XmlHelper {
 	public static Document parse(String xml) throws Exception {
@@ -40,7 +44,7 @@ public class XmlHelper {
 
 	public static void removeEmptyNodes(Node node) {
 		NodeList nl = node.getChildNodes();
-		//System.out.println(node.getNodeName() + " -> " + nl.getLength());
+		// System.out.println(node.getNodeName() + " -> " + nl.getLength());
 		for (int i = nl.getLength() - 1; i >= 0; --i) {
 			Node childNode = nl.item(i);
 			if (childNode.getNodeName() == "#text") {
@@ -168,19 +172,25 @@ public class XmlHelper {
 		udn.setAttribute(attr, value);
 		return udn;
 	}
-	
+
 	public static void printChildren(Node node) {
-		NodeList nl = node.getChildNodes();
-		for (int index = 0; index < nl.getLength(); ++index) {
-			Node child = nl.item(index);
-			StringBuilder sb = new StringBuilder("<" + child.getNodeName());
-			NamedNodeMap nnm = child.getAttributes();
-			for (int index2 = 0; index2 < nnm.getLength(); ++index2) {
-				Node attr = nnm.item(index2);
-				sb.append(" " + attr.getNodeName() + "=\"" + attr.getTextContent() + "\"");
+		if (node.hasChildNodes()) {
+			NodeList nl = node.getChildNodes();
+			for (int index = 0; index < nl.getLength(); ++index) {
+				Node child = nl.item(index);
+				StringBuilder sb = new StringBuilder("<" + child.getNodeName());
+				if (child.hasAttributes()) {
+					NamedNodeMap nnm = child.getAttributes();
+					for (int index2 = 0; index2 < nnm.getLength(); ++index2) {
+						Node attr = nnm.item(index2);
+						sb.append(" " + attr.getNodeName() + "=\"" + attr.getTextContent() + "\"");
+					}
+				}
+				sb.append(">");
+				System.out.println(sb);
 			}
-			sb.append(">");
-			System.out.println(sb);
+		} else {
+			System.out.println("Hat keine Kinder. Text = " + node.getTextContent());
 		}
 	}
 }

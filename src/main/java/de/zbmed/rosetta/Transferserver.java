@@ -25,7 +25,7 @@ public class Transferserver {
 	private Channel channel;
 	private ChannelSftp sftpChannel;
 
-	Transferserver() throws Exception {
+	public Transferserver() throws Exception {
 		host = Custom.getSftpAdresse();
 		port = 22;
 		user = Custom.getSftpUsername();
@@ -76,6 +76,7 @@ public class Transferserver {
 
 	public static void main(String[] args) throws Exception {
 		Transferserver ts = new Transferserver();
+		ts.uploadFile("test.txt", "/exchange/lza/lza-zbmed/dev/gms/test.txt");
 		ts.ls("/exchange/lza/lza-zbmed/dev/gms/");
 		ts.diconnect();
 	}

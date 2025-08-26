@@ -13,6 +13,7 @@ import com.exlibris.dps.IEWebServices;
 import com.exlibris.dps.IEWebServices_Service;
 import com.exlibris.dps.IeStatusInfo;
 import com.exlibris.dps.MetaData;
+import com.exlibris.dps.RepresentationContent;
 import com.exlibris.dps.sdk.pds.HeaderHandlerResolver;
 
 public class WebServices {
@@ -128,7 +129,7 @@ public class WebServices {
 		IEWebServices_Service ieWS = new IEWebServices_Service(new URL(IE_WSDL_URL),
 				new QName("http://dps.exlibris.com/", "IEWebServices"));
 		ieWS.setHandlerResolver(new HeaderHandlerResolver(userName, password, institution));
-		
+
 		List<MetaData> metadata = new Stack<>();
 		MetaData metadatum = new MetaData();
 		metadatum.setType("descriptive");
@@ -138,8 +139,40 @@ public class WebServices {
 		ieWS.getIEWebServicesPort().updateMD(commit, metadata, iePid, null);
 	}
 
+	public static long updateRepresentation(List<RepresentationContent> representationContent, List<MetaData> metadata,
+			String repPid, String iePid, String rosettaInstance, boolean commit, String submissionReason)
+			throws Exception {
+		final String rosettaURL = Custom.getRosettaURL(rosettaInstance);
+		final String institution = Custom.getInstitution(rosettaInstance);
+		final String userName = Custom.getUsername(rosettaInstance);
+		final String password = Custom.getPassword(rosettaInstance);
+		final String IE_WSDL_URL = Custom.getIE_WSDL_URL(rosettaURL);
+
+		IEWebServices_Service ieWS = new IEWebServices_Service(new URL(IE_WSDL_URL),
+				new QName("http://dps.exlibris.com/", "IEWebServices"));
+		ieWS.setHandlerResolver(new HeaderHandlerResolver(userName, password, institution));
+
+		System.out.println("Update Repräsentation: " + iePid + " " + repPid + " '" + submissionReason + "'");
+		return ieWS.getIEWebServicesPort().updateRepresentation(commit, iePid, metadata, null, repPid,
+				representationContent, submissionReason);
+	}
+
+	public static String getRipStatus(long ripID, String rosettaInstance) throws Exception {
+		final String rosettaURL = Custom.getRosettaURL(rosettaInstance);
+		final String institution = Custom.getInstitution(rosettaInstance);
+		final String userName = Custom.getUsername(rosettaInstance);
+		final String password = Custom.getPassword(rosettaInstance);
+		final String IE_WSDL_URL = Custom.getIE_WSDL_URL(rosettaURL);
+
+		IEWebServices_Service ieWS = new IEWebServices_Service(new URL(IE_WSDL_URL),
+				new QName("http://dps.exlibris.com/", "IEWebServices"));
+		ieWS.setHandlerResolver(new HeaderHandlerResolver(userName, password, institution));
+
+		return ieWS.getIEWebServicesPort().getRipStatus(null, ripID);
+	}
+
 	public static void main(String[] args) throws Exception {
-		System.out.println(getMD("IE28266070", "prod"));
-		System.out.println(getMD("IE9712123", "prod"));
+//		System.out.println(getMD("IE28266070", "prod"));
+//		System.out.println(getMD("IE9712123", "prod"));
 	}
 }
