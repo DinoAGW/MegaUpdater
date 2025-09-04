@@ -4,12 +4,15 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.w3c.dom.Document;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
 import de.zbmed.utilities.Drive;
 import de.zbmed.utilities.Utilities;
 import de.zbmed.utilities.WebServices;
 import de.zbmed.utilities.XmlHelper;
-
-import org.w3c.dom.*;
 
 public class MetadatenScanner {
 	private static final String fs = Drive.fs;

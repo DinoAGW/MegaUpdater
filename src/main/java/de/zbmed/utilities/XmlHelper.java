@@ -193,4 +193,25 @@ public class XmlHelper {
 			System.out.println("Hat keine Kinder. Text = " + node.getTextContent());
 		}
 	}
+
+	public static Element newIeDmdElement() throws Exception {
+		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+		DocumentBuilder builder = factory.newDocumentBuilder();
+		Document doc = builder.newDocument();
+		Element root = doc.createElementNS("http://www.loc.gov/METS/", "mets:mets");
+		doc.appendChild(root);
+		Element dmdSec = doc.createElement("mets:dmdSec");
+		dmdSec.setAttribute("ID", "ie-dmd");
+		root.appendChild(dmdSec);
+		Element mdWrap = doc.createElement("mets:mdWrap");
+		mdWrap.setAttribute("MDTYPE", "DC");
+		dmdSec.appendChild(mdWrap);
+		Element xmlData = doc.createElement("mets:xmlData");
+		mdWrap.appendChild(xmlData);
+		Element record = doc.createElementNS("http://purl.org/dc/elements/1.1/", "dc:record");
+		record.setAttribute("xmlns:dcterms", "http://purl.org/dc/terms/");
+		record.setAttribute("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance");
+		xmlData.appendChild(record);
+		return record;
+	}
 }

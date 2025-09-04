@@ -171,6 +171,24 @@ public class WebServices {
 		return ieWS.getIEWebServicesPort().getRipStatus(null, ripID);
 	}
 
+//	public static void exportIE(String iePid, String rosettaInstance, String target) throws Exception {
+//		if (!target.startsWith("/exchange/lza/lza-zbmed/export/")) {
+//			throw new Exception("Pfad muss unter Export liegen");
+//		}
+//		final String rosettaURL = Custom.getRosettaURL(rosettaInstance);
+//		final String institution = Custom.getInstitution(rosettaInstance);
+//		final String userName = Custom.getUsername(rosettaInstance);
+//		final String password = Custom.getPassword(rosettaInstance);
+//		final String IE_WSDL_URL = Custom.getIE_WSDL_URL(rosettaURL);
+//
+//		DataManagerServicesWS_Service dmWS = DataManagerServicesWS;
+//		IEWebServices_Service ieWS = new IEWebServices_Service(new URL(IE_WSDL_URL),
+//				new QName("http://dps.exlibris.com/", "IEWebServices"));
+//		ieWS.setHandlerResolver(new HeaderHandlerResolver(userName, password, institution));
+//		
+//		ieWS.getIEWebServicesPort().
+//	}
+
 	public static void main(String[] args) throws Exception {
 //		System.out.println(getMD("IE28266070", "prod"));
 //		System.out.println(getMD("IE9712123", "prod"));
